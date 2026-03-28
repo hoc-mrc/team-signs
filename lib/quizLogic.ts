@@ -1,5 +1,5 @@
 import type { Motion, PlaySign, SignConfig, MotionStep, Difficulty, QuizAnswer } from './types'
-import { ALL_MOTIONS, ALL_PLAY_SIGNS } from './types'
+import { ALL_MOTIONS } from './types'
 
 function pickRandom<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)]
@@ -14,19 +14,37 @@ function shuffle<T>(arr: T[]): T[] {
   return copy
 }
 
-export function generateSequence(
-  sign: PlaySign,
+// Signs that can't appear together in the same round
+const SIGN_CONFLICTS: Partial<Record<PlaySign, PlaySign[]>> = {
+  steal: ['delayed-steal'],
+  'delayed-steal': ['steal'],
+}
+
+function pickSignsForRound(activeSigns: PlaySign[], count: number): PlaySign[] {
+  const shuffled = shuffle(activeSigns)
+  const selected: PlaySign[] = []
+  for (const sign of shuffled) {
+    if (selected.length >= count) break
+    const conflicts = SIGN_CONFLICTS[sign] ?? []
+    const hasConflict = selected.some(
+      (s) => conflicts.includes(s) || (SIGN_CONFLICTS[s] ?? []).includes(sign)
+    )
+    if (!hasConflict) selected.push(sign)
+  }
+  return selected
+}
+
+function buildSignSequence(
+  signs: PlaySign[],
   config: SignConfig,
   difficulty: Difficulty,
-  activeSigns: PlaySign[] = []
+  activeSigns: PlaySign[]
 ): MotionStep[] {
   const numDecoys = difficulty === 'easy' ? 1 : difficulty === 'medium' ? 3 : 5
 
-  // Motions reserved for functional roles — exclude ALL active sign motions as decoys
-  // so players never see another real sign and confuse it for the answer
+  // Only non-sign, non-reserved motions can be decoys
   const reserved = new Set<Motion>([
     ...(config.useWipeOff ? [config.wipeOff] : []),
-    config.signMap[sign],
     ...(config.useIndicator && config.indicator ? [config.indicator] : []),
     ...activeSigns.map((s) => config.signMap[s]),
   ])
@@ -44,120 +62,102 @@ export function generateSequence(
     steps.push({ motion: config.indicator, role: 'indicator' })
   }
 
-  steps.push({ motion: config.signMap[sign], role: 'sign' })
-
-  return steps
-}
-
-export function generateHardSequence(
-  realSign: PlaySign,
-  config: SignConfig,
-  activeSigns: PlaySign[]
-): MotionStep[] {
-  const useWipeOff = config.useWipeOff && Math.random() < 0.4
-
-  if (!useWipeOff) {
-    return generateSequence(realSign, config, 'hard', activeSigns)
+  for (const sign of signs) {
+    steps.push({ motion: config.signMap[sign], role: 'sign' })
   }
-
-  // Pick a different sign to fake first
-  const otherSigns = activeSigns.filter((s) => s !== realSign)
-  if (otherSigns.length === 0) {
-    return generateSequence(realSign, config, 'hard', activeSigns)
-  }
-  const fakeSign = pickRandom(otherSigns)
-
-  const fakeReserved = new Set<Motion>([
-    ...(config.useWipeOff ? [config.wipeOff] : []),
-    config.signMap[fakeSign],
-    ...(config.useIndicator && config.indicator ? [config.indicator] : []),
-    ...activeSigns.map((s) => config.signMap[s]),
-  ])
-  const fakeDecoyPool = ALL_MOTIONS.filter((m) => !fakeReserved.has(m))
-  const fakeDecoy = shuffle(fakeDecoyPool)[0]
-
-  const steps: MotionStep[] = []
-
-  // --- Fake sequence ---
-  if (fakeDecoy) steps.push({ motion: fakeDecoy, role: 'decoy' })
-  if (config.useIndicator && config.indicator) {
-    steps.push({ motion: config.indicator, role: 'indicator' })
-  }
-  steps.push({ motion: config.signMap[fakeSign], role: 'sign' })
-
-  // --- Wipe off ---
-  steps.push({ motion: config.wipeOff, role: 'wipe-off' })
-
-  // --- Real sequence ---
-  const realSteps = generateSequence(realSign, config, 'hard', activeSigns)
-  steps.push(...realSteps)
 
   return steps
 }
 
 export function buildQuizRound(
-  sign: PlaySign,
   config: SignConfig,
   difficulty: Difficulty,
   activeSigns: PlaySign[]
 ): MotionStep[] {
-  if (difficulty === 'hard') {
-    return generateHardSequence(sign, config, activeSigns)
+  // Easy: always 1 sign. Medium: 1–2. Hard: 1–3.
+  const maxSigns = difficulty === 'easy' ? 1 : difficulty === 'medium' ? 2 : 3
+  const numSigns = difficulty === 'easy' ? 1 : Math.floor(Math.random() * maxSigns) + 1
+
+  const signs = pickSignsForRound(activeSigns, numSigns)
+  if (signs.length === 0) return buildSwingAwayRound(config, difficulty, activeSigns)
+
+  // Hard mode: sometimes show a fake sequence, wipe it off, then show the real one
+  if (difficulty === 'hard' && config.useWipeOff && Math.random() < 0.4) {
+    const otherSigns = activeSigns.filter((s) => !signs.includes(s))
+    if (otherSigns.length > 0) {
+      const fakeSign = pickRandom(otherSigns)
+      const fakeSteps = buildSignSequence([fakeSign], config, 'hard', activeSigns)
+      const realSteps = buildSignSequence(signs, config, 'hard', activeSigns)
+      return [
+        ...fakeSteps,
+        { motion: config.wipeOff, role: 'wipe-off' as const },
+        ...realSteps,
+      ]
+    }
   }
-  return generateSequence(sign, config, difficulty)
+
+  return buildSignSequence(signs, config, difficulty, activeSigns)
 }
 
-// Signs that shouldn't appear together as answer choices (contradictory instructions)
-const CONFLICTING: Partial<Record<QuizAnswer, QuizAnswer[]>> = {
-  bunt: ['take'],
-  take: ['bunt'],
+/**
+ * Returns the correct QuizAnswer[] for a sequence.
+ * Only looks at steps after the last wipe-off.
+ * Returns ['swing-away'] if no sign steps are found.
+ */
+export function getCorrectSigns(steps: MotionStep[], config: SignConfig): QuizAnswer[] {
+  const lastWipeOffIndex = steps.reduce(
+    (last, step, i) => (step.role === 'wipe-off' ? i : last),
+    -1
+  )
+
+  const relevantSteps = steps.slice(lastWipeOffIndex + 1)
+  const signSteps = relevantSteps.filter((s) => s.role === 'sign')
+
+  if (signSteps.length === 0) return ['swing-away']
+
+  return signSteps
+    .map((step) => {
+      const entry = Object.entries(config.signMap).find(([, m]) => m === step.motion)
+      return entry?.[0] as PlaySign | undefined
+    })
+    .filter((s): s is PlaySign => s !== undefined)
 }
 
-export function generateAnswerChoices(correct: QuizAnswer, activeSigns: PlaySign[]): QuizAnswer[] {
-  const conflicts = CONFLICTING[correct] ?? []
-  const others = shuffle(
-    activeSigns.filter((s) => s !== correct && !conflicts.includes(s))
-  ) as QuizAnswer[]
-
-  // Always include 'swing-away' as a wrong-answer option (unless it's the correct answer)
-  const wrongPool: QuizAnswer[] =
-    correct === 'swing-away' ? others : ['swing-away', ...others]
-
-  return shuffle([correct, ...wrongPool.slice(0, 3)])
+/**
+ * Generate a single-sign demo sequence (used by the Learn screen).
+ * Decoys are only non-sign motions so the sign is unambiguous.
+ */
+export function generateSequence(
+  sign: PlaySign,
+  config: SignConfig,
+  difficulty: Difficulty
+): MotionStep[] {
+  const activeSigns = Object.entries(config.activeSignsMap)
+    .filter(([, active]) => active)
+    .map(([s]) => s as PlaySign)
+  return buildSignSequence([sign], config, difficulty, activeSigns)
 }
 
 /** Generate a decoy-only sequence — no sign, batter should swing away */
-export function buildSwingAwayRound(config: SignConfig, difficulty: Difficulty, activeSigns: PlaySign[]): MotionStep[] {
+export function buildSwingAwayRound(
+  config: SignConfig,
+  difficulty: Difficulty,
+  activeSigns: PlaySign[]
+): MotionStep[] {
   const numDecoys = difficulty === 'easy' ? 2 : difficulty === 'medium' ? 4 : 6
   const reserved = new Set<Motion>([
     ...(config.useWipeOff ? [config.wipeOff] : []),
     ...(config.useIndicator && config.indicator ? [config.indicator] : []),
-    // Exclude active sign motions — showing them would look like a real sign was given
     ...activeSigns.map((s) => config.signMap[s]),
   ])
   const pool = ALL_MOTIONS.filter((m) => !reserved.has(m))
-  return shuffle(pool).slice(0, Math.min(numDecoys, pool.length)).map((m) => ({ motion: m, role: 'decoy' as const }))
+  return shuffle(pool)
+    .slice(0, Math.min(numDecoys, pool.length))
+    .map((m) => ({ motion: m, role: 'decoy' as const }))
 }
 
 /** ~20% chance of a swing-away round (more likely on harder difficulties) */
 export function shouldPlaySwingAway(difficulty: Difficulty): boolean {
   const prob = difficulty === 'easy' ? 0.15 : difficulty === 'medium' ? 0.2 : 0.25
   return Math.random() < prob
-}
-
-/** Returns the correct PlaySign from a sequence (the LAST sign-role motion) */
-export function getCorrectSign(
-  steps: MotionStep[],
-  config: SignConfig
-): PlaySign | null {
-  const signSteps = steps.filter((s) => s.role === 'sign')
-  const lastSignMotion = signSteps[signSteps.length - 1]?.motion
-  if (!lastSignMotion) return null
-
-  const entry = Object.entries(config.signMap).find(([, m]) => m === lastSignMotion)
-  return (entry?.[0] as PlaySign) ?? null
-}
-
-export function pickRandomSign(activeSigns: PlaySign[]): PlaySign {
-  return pickRandom(activeSigns)
 }

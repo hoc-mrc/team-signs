@@ -15,16 +15,14 @@ import {
   buildQuizRound,
   buildSwingAwayRound,
   shouldPlaySwingAway,
-  generateAnswerChoices,
-  getCorrectSign,
-  pickRandomSign,
+  getCorrectSigns,
 } from '@/lib/quizLogic'
 import { SPEED_MULT } from '@/lib/animationSequences'
 
 type GameState = 'idle' | 'animating' | 'answering' | 'feedback' | 'complete'
 
 const TOTAL_ROUNDS = 10
-const FEEDBACK_DELAY = 1600
+const FEEDBACK_DELAY = 1800
 
 const DIFFICULTY_META: Record<
   Difficulty,
@@ -34,19 +32,19 @@ const DIFFICULTY_META: Record<
     label: 'Easy',
     color: 'bg-green-600 hover:bg-green-500',
     badge: 'bg-green-500/20 text-green-300 border-green-700',
-    description: '1 decoy · slow',
+    description: '1 sign · 1 decoy · slow',
   },
   medium: {
     label: 'Medium',
     color: 'bg-amber-600 hover:bg-amber-500',
     badge: 'bg-amber-500/20 text-amber-300 border-amber-700',
-    description: '3 decoys · normal speed',
+    description: 'up to 2 signs · 3 decoys · normal speed',
   },
   hard: {
     label: 'Hard',
     color: 'bg-red-700 hover:bg-red-600',
     badge: 'bg-red-500/20 text-red-300 border-red-700',
-    description: '5 decoys · fast · wipe-offs',
+    description: 'up to 3 signs · 5 decoys · fast · wipe-offs',
   },
 }
 
@@ -58,49 +56,45 @@ export default function QuizPage() {
   const [score, setScore] = useState(0)
   const [streak, setStreak] = useState(0)
   const [sequence, setSequence] = useState<MotionStep[]>([])
-  const [correctAnswer, setCorrectAnswer] = useState<QuizAnswer>('bunt')
+  const [correctAnswers, setCorrectAnswers] = useState<QuizAnswer[]>([])
   const [choices, setChoices] = useState<QuizAnswer[]>([])
-  const [playerAnswer, setPlayerAnswer] = useState<QuizAnswer | null>(null)
+  const [playerAnswers, setPlayerAnswers] = useState<QuizAnswer[]>([])
   const [playCount, setPlayCount] = useState(0)
 
   useEffect(() => {
     setConfig(loadConfig())
   }, [])
 
-  const startRound = useCallback(
-    (cfg: SignConfig, diff: Difficulty) => {
-      const activeSigns = ALL_PLAY_SIGNS.filter((s) => cfg.activeSignsMap[s])
+  const startRound = useCallback((cfg: SignConfig, diff: Difficulty) => {
+    const activeSigns = ALL_PLAY_SIGNS.filter((s) => cfg.activeSignsMap[s])
 
-      let seq: MotionStep[]
-      let answer: QuizAnswer
+    let seq: MotionStep[]
+    let answers: QuizAnswer[]
 
-      if (shouldPlaySwingAway(diff)) {
-        seq = buildSwingAwayRound(cfg, diff, activeSigns)
-        answer = 'swing-away'
-      } else {
-        const sign = pickRandomSign(activeSigns)
-        seq = buildQuizRound(sign, cfg, diff, activeSigns)
-        answer = getCorrectSign(seq, cfg) ?? sign
-      }
+    if (shouldPlaySwingAway(diff)) {
+      seq = buildSwingAwayRound(cfg, diff, activeSigns)
+      answers = ['swing-away']
+    } else {
+      seq = buildQuizRound(cfg, diff, activeSigns)
+      answers = getCorrectSigns(seq, cfg)
+    }
 
-      const opts = generateAnswerChoices(answer, activeSigns)
+    // Choices: all active signs + swing-away
+    const allChoices: QuizAnswer[] = [...activeSigns, 'swing-away']
 
-      setSequence(seq)
-      setCorrectAnswer(answer)
-      setChoices(opts)
-      setPlayerAnswer(null)
-      setGameState('animating')
-      setPlayCount((c) => c + 1)
-    },
-    []
-  )
+    setSequence(seq)
+    setCorrectAnswers(answers)
+    setChoices(allChoices)
+    setPlayerAnswers([])
+    setGameState('animating')
+    setPlayCount((c) => c + 1)
+  }, [])
 
   function handleStart() {
     if (!config) return
     setRound(0)
     setScore(0)
     setStreak(0)
-    setGameState('animating')
     startRound(config, difficulty)
     setRound(1)
   }
@@ -109,12 +103,29 @@ export default function QuizPage() {
     setGameState('answering')
   }
 
-  function handleAnswer(answer: QuizAnswer) {
+  function handleToggle(answer: QuizAnswer) {
     if (gameState !== 'answering') return
-    setPlayerAnswer(answer)
+    setPlayerAnswers((prev) => {
+      if (answer === 'swing-away') {
+        // Swing-away is mutually exclusive with sign selections
+        return prev.includes('swing-away') ? [] : ['swing-away']
+      }
+      // Selecting a sign clears swing-away, then toggles the sign
+      const withoutSwingAway = prev.filter((a) => a !== 'swing-away')
+      return withoutSwingAway.includes(answer as PlaySign)
+        ? withoutSwingAway.filter((a) => a !== answer)
+        : [...withoutSwingAway, answer]
+    })
+  }
+
+  function handleSubmit() {
+    if (gameState !== 'answering' || playerAnswers.length === 0) return
     setGameState('feedback')
 
-    const isCorrect = answer === correctAnswer
+    const isCorrect =
+      playerAnswers.length === correctAnswers.length &&
+      playerAnswers.every((a) => correctAnswers.includes(a))
+
     if (isCorrect) {
       setScore((s) => s + 1)
       setStreak((s) => s + 1)
@@ -136,7 +147,7 @@ export default function QuizPage() {
   function handleReplay() {
     setPlayCount((c) => c + 1)
     setGameState('animating')
-    setPlayerAnswer(null)
+    setPlayerAnswers([])
   }
 
   function handleRestart() {
@@ -146,7 +157,7 @@ export default function QuizPage() {
     setStreak(0)
     setPlayCount(0)
     setSequence([])
-    setPlayerAnswer(null)
+    setPlayerAnswers([])
   }
 
   if (!config) return null
@@ -220,7 +231,7 @@ export default function QuizPage() {
         ? 'Great job! Keep practicing!'
         : pct >= 50
         ? 'Good effort! Try again to improve.'
-        : 'Keep practicing — you\'ll get it!'
+        : "Keep practicing — you'll get it!"
 
     return (
       <main className="min-h-screen flex flex-col items-center justify-center p-6 gap-6 max-w-sm mx-auto text-center">
@@ -256,7 +267,9 @@ export default function QuizPage() {
   const isAnswering = gameState === 'answering'
   const isFeedback = gameState === 'feedback'
   const isAnimating = gameState === 'animating'
-  const isCorrect = playerAnswer === correctAnswer
+  const isCorrect =
+    playerAnswers.length === correctAnswers.length &&
+    playerAnswers.every((a) => correctAnswers.includes(a))
 
   return (
     <main className="min-h-screen flex flex-col items-center p-6 gap-5 max-w-sm mx-auto">
@@ -281,7 +294,7 @@ export default function QuizPage() {
       {/* Coach avatar */}
       <div className="flex flex-col items-center gap-2 w-full">
         <div className="text-xs text-slate-600 uppercase tracking-wide">
-          {isAnimating ? 'Watch carefully…' : isAnswering ? 'What was the sign?' : ''}
+          {isAnimating ? 'Watch carefully…' : isAnswering ? 'What sign(s) were given?' : ''}
         </div>
         <CoachAvatar
           sequence={sequence}
@@ -324,10 +337,17 @@ export default function QuizPage() {
               </p>
               {!isCorrect && (
                 <p className="text-xs text-slate-400">
-                  That was{' '}
-                  <span className="text-white font-semibold">
-                    {QUIZ_ANSWER_EMOJIS[correctAnswer]} {QUIZ_ANSWER_LABELS[correctAnswer]}
-                  </span>
+                  {correctAnswers.length === 1 && correctAnswers[0] === 'swing-away'
+                    ? 'No sign was given — swing away'
+                    : <>
+                        Answer:{' '}
+                        <span className="text-white font-semibold">
+                          {correctAnswers
+                            .map((a) => `${QUIZ_ANSWER_EMOJIS[a]} ${QUIZ_ANSWER_LABELS[a]}`)
+                            .join(' + ')}
+                        </span>
+                      </>
+                  }
                 </p>
               )}
             </div>
@@ -339,9 +359,10 @@ export default function QuizPage() {
       {(isAnswering || isFeedback) && (
         <QuizPanel
           choices={choices}
-          correctSign={correctAnswer}
-          playerAnswer={playerAnswer}
-          onAnswer={handleAnswer}
+          correctSigns={correctAnswers}
+          playerAnswers={playerAnswers}
+          onToggle={handleToggle}
+          onSubmit={handleSubmit}
           state={isFeedback ? 'feedback' : 'answering'}
         />
       )}
