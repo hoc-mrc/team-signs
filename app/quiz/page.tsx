@@ -223,15 +223,28 @@ export default function QuizPage() {
   // ── COMPLETE ──
   if (gameState === 'complete') {
     const pct = Math.round((score / TOTAL_ROUNDS) * 100)
-    const emoji = pct >= 90 ? '🏆' : pct >= 70 ? '⭐' : pct >= 50 ? '👍' : '💪'
-    const message =
-      pct >= 90
-        ? 'Outstanding! You read every sign!'
-        : pct >= 70
-        ? 'Great job! Keep practicing!'
-        : pct >= 50
-        ? 'Good effort! Try again to improve.'
-        : "Keep practicing — you'll get it!"
+    const passed = score >= 9
+    const nextDifficulty: Difficulty | null =
+      difficulty === 'easy' ? 'medium' : difficulty === 'medium' ? 'hard' : null
+    const emoji = passed ? (nextDifficulty ? '⭐' : '🏆') : pct >= 50 ? '👍' : '💪'
+    const message = passed
+      ? nextDifficulty
+        ? `Nice work! Ready for ${DIFFICULTY_META[nextDifficulty].label}?`
+        : "You've mastered Hard — that's the whole playbook!"
+      : "Keep practicing — you'll get it!"
+
+    function handlePlayAt(d: Difficulty) {
+      setDifficulty(d)
+      setRound(0)
+      setScore(0)
+      setStreak(0)
+      setPlayCount(0)
+      setSequence([])
+      setPlayerAnswers([])
+      if (!config) return
+      startRound(config, d)
+      setRound(1)
+    }
 
     return (
       <main className="min-h-screen flex flex-col items-center justify-center p-6 gap-6 max-w-sm mx-auto text-center">
@@ -247,12 +260,21 @@ export default function QuizPage() {
           <span className="text-slate-500 text-sm">{pct}% correct</span>
         </div>
         <div className="flex flex-col gap-3 w-full">
-          <Button
-            onClick={handleRestart}
-            className="w-full h-12 font-bold bg-green-600 hover:bg-green-500"
-          >
-            Play Again
-          </Button>
+          {passed && nextDifficulty ? (
+            <Button
+              onClick={() => handlePlayAt(nextDifficulty)}
+              className={`w-full h-12 font-bold text-white ${DIFFICULTY_META[nextDifficulty].color}`}
+            >
+              Try {DIFFICULTY_META[nextDifficulty].label} →
+            </Button>
+          ) : (
+            <Button
+              onClick={() => handlePlayAt(difficulty)}
+              className="w-full h-12 font-bold bg-green-600 hover:bg-green-500"
+            >
+              {passed ? 'Play Again' : 'Try Again'}
+            </Button>
+          )}
           <Link href="/">
             <Button variant="outline" className="w-full border-slate-700 text-slate-300">
               Back to Home
