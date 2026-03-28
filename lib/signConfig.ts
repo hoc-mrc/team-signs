@@ -49,10 +49,6 @@ export function validateConfig(config: SignConfig): string[] {
     }
   }
 
-  if (config.activeSignsMap['take'] && config.activeSignsMap['bunt']) {
-    errors.push('Take and Bunt cannot both be active — they give the batter contradictory instructions')
-  }
-
   for (const sign of ALL_PLAY_SIGNS) {
     if (!config.activeSignsMap[sign]) continue
     const motion = config.signMap[sign as PlaySign]

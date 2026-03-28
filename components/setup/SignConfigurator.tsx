@@ -1,7 +1,6 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
@@ -64,11 +63,18 @@ function MotionSelect({
 }
 
 export default function SignConfigurator({ initial }: SignConfiguratorProps) {
-  const router = useRouter()
   const [config, setConfig] = useState<SignConfig>(initial)
-  const [saved, setSaved] = useState(false)
+  const [savedAt, setSavedAt] = useState<number | null>(null)
 
   const errors = validateConfig(config)
+
+  // Auto-save on every valid change
+  useEffect(() => {
+    if (errors.length > 0) return
+    saveConfig(config)
+    setSavedAt(Date.now())
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [config])
 
   // Build a set of all motions currently in use (to warn about conflicts)
   const usedMotions = new Set<Motion>()
@@ -80,7 +86,6 @@ export default function SignConfigurator({ initial }: SignConfiguratorProps) {
 
   function updateSignMap(sign: PlaySign, motion: Motion) {
     setConfig((c) => ({ ...c, signMap: { ...c.signMap, [sign]: motion } }))
-    setSaved(false)
   }
 
   function toggleSign(sign: PlaySign, active: boolean) {
@@ -88,19 +93,10 @@ export default function SignConfigurator({ initial }: SignConfiguratorProps) {
       ...c,
       activeSignsMap: { ...c.activeSignsMap, [sign]: active },
     }))
-    setSaved(false)
-  }
-
-  function handleSave() {
-    if (errors.length > 0) return
-    saveConfig(config)
-    setSaved(true)
-    setTimeout(() => router.push('/'), 800)
   }
 
   function handleReset() {
     setConfig(DEFAULT_CONFIG)
-    setSaved(false)
   }
 
   return (
@@ -121,8 +117,7 @@ export default function SignConfigurator({ initial }: SignConfiguratorProps) {
               checked={config.useIndicator}
               onCheckedChange={(v) => {
                 setConfig((c) => ({ ...c, useIndicator: v }))
-                setSaved(false)
-              }}
+                          }}
             />
             <Label htmlFor="use-indicator" className="text-slate-200 cursor-pointer">
               Use an indicator in this session
@@ -138,8 +133,7 @@ export default function SignConfigurator({ initial }: SignConfiguratorProps) {
                 value={config.indicator}
                 onChange={(m) => {
                   setConfig((c) => ({ ...c, indicator: m }))
-                  setSaved(false)
-                }}
+                              }}
                 placeholder="Choose the indicator motion…"
               />
               <p className="text-xs text-blue-400 mt-1">
@@ -204,8 +198,7 @@ export default function SignConfigurator({ initial }: SignConfiguratorProps) {
               checked={config.useWipeOff}
               onCheckedChange={(v) => {
                 setConfig((c) => ({ ...c, useWipeOff: v }))
-                setSaved(false)
-              }}
+                          }}
             />
             <Label htmlFor="use-wipe-off" className="text-slate-200 cursor-pointer">
               Use a wipe-off in this session
@@ -221,8 +214,7 @@ export default function SignConfigurator({ initial }: SignConfiguratorProps) {
                 value={config.wipeOff}
                 onChange={(m) => {
                   setConfig((c) => ({ ...c, wipeOff: m }))
-                  setSaved(false)
-                }}
+                              }}
               />
               <p className="text-xs text-red-400 mt-1">
                 🚫 The wipe-off will glow red during practice
@@ -245,14 +237,7 @@ export default function SignConfigurator({ initial }: SignConfiguratorProps) {
       <Separator className="bg-slate-800" />
 
       {/* Actions */}
-      <div className="flex items-center gap-3">
-        <Button
-          onClick={handleSave}
-          disabled={errors.length > 0}
-          className="flex-1 bg-green-600 hover:bg-green-500 text-white font-bold text-base h-12"
-        >
-          {saved ? '✓ Saved! Going home…' : 'Save Sign System'}
-        </Button>
+      <div className="flex items-center justify-between">
         <Button
           variant="outline"
           onClick={handleReset}
@@ -260,6 +245,13 @@ export default function SignConfigurator({ initial }: SignConfiguratorProps) {
         >
           Reset to Default
         </Button>
+        <span className="text-xs text-slate-500">
+          {errors.length > 0
+            ? '⚠ Fix errors to save'
+            : savedAt
+            ? '✓ Saved'
+            : ''}
+        </span>
       </div>
 
       <div className="text-center">
