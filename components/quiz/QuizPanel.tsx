@@ -1,14 +1,14 @@
 'use client'
 
 import { motion, AnimatePresence } from 'framer-motion'
-import type { PlaySign } from '@/lib/types'
-import { SIGN_LABELS, SIGN_EMOJIS, SIGN_DESCRIPTIONS, SIGN_COLORS } from '@/lib/types'
+import type { QuizAnswer } from '@/lib/types'
+import { QUIZ_ANSWER_LABELS, QUIZ_ANSWER_EMOJIS, QUIZ_ANSWER_DESCRIPTIONS, QUIZ_ANSWER_COLORS } from '@/lib/types'
 
 interface QuizPanelProps {
-  choices: PlaySign[]
-  correctSign: PlaySign
-  playerAnswer: PlaySign | null
-  onAnswer: (sign: PlaySign) => void
+  choices: QuizAnswer[]
+  correctSign: QuizAnswer
+  playerAnswer: QuizAnswer | null
+  onAnswer: (answer: QuizAnswer) => void
   state: 'answering' | 'feedback'
 }
 
@@ -24,7 +24,7 @@ export default function QuizPanel({
   return (
     <div className="grid grid-cols-1 gap-3 w-full max-w-sm">
       {choices.map((sign) => {
-        const colors = SIGN_COLORS[sign]
+        const colors = QUIZ_ANSWER_COLORS[sign]
         const isCorrect = sign === correctSign
         const isSelected = sign === playerAnswer
         const showResult = state === 'feedback'
@@ -56,7 +56,7 @@ export default function QuizPanel({
               .filter(Boolean)
               .join(' ')}
           >
-            <span className="text-2xl flex-shrink-0">{SIGN_EMOJIS[sign]}</span>
+            <span className="text-2xl flex-shrink-0">{QUIZ_ANSWER_EMOJIS[sign]}</span>
             <div className="flex-1 min-w-0">
               <p
                 className={`font-bold text-base leading-tight ${
@@ -67,10 +67,10 @@ export default function QuizPanel({
                     : colors.text
                 }`}
               >
-                {SIGN_LABELS[sign]}
+                {QUIZ_ANSWER_LABELS[sign]}
               </p>
               <p className="text-xs text-slate-400 leading-snug mt-0.5 line-clamp-1">
-                {SIGN_DESCRIPTIONS[sign]}
+                {QUIZ_ANSWER_DESCRIPTIONS[sign]}
               </p>
             </div>
 

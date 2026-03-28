@@ -1,4 +1,4 @@
-import type { Motion, PlaySign, SignConfig, MotionStep, Difficulty } from './types'
+import type { Motion, PlaySign, SignConfig, MotionStep, Difficulty, QuizAnswer } from './types'
 import { ALL_MOTIONS, ALL_PLAY_SIGNS } from './types'
 
 function pickRandom<T>(arr: T[]): T {
@@ -103,9 +103,40 @@ export function buildQuizRound(
   return generateSequence(sign, config, difficulty)
 }
 
-export function generateAnswerChoices(correct: PlaySign, activeSigns: PlaySign[]): PlaySign[] {
-  const others = shuffle(activeSigns.filter((s) => s !== correct))
-  return shuffle([correct, ...others.slice(0, 3)])
+// Signs that shouldn't appear together as answer choices (contradictory instructions)
+const CONFLICTING: Partial<Record<QuizAnswer, QuizAnswer[]>> = {
+  bunt: ['take'],
+  take: ['bunt'],
+}
+
+export function generateAnswerChoices(correct: QuizAnswer, activeSigns: PlaySign[]): QuizAnswer[] {
+  const conflicts = CONFLICTING[correct] ?? []
+  const others = shuffle(
+    activeSigns.filter((s) => s !== correct && !conflicts.includes(s))
+  ) as QuizAnswer[]
+
+  // Always include 'swing-away' as a wrong-answer option (unless it's the correct answer)
+  const wrongPool: QuizAnswer[] =
+    correct === 'swing-away' ? others : ['swing-away', ...others]
+
+  return shuffle([correct, ...wrongPool.slice(0, 3)])
+}
+
+/** Generate a decoy-only sequence — no sign, batter should swing away */
+export function buildSwingAwayRound(config: SignConfig, difficulty: Difficulty): MotionStep[] {
+  const numDecoys = difficulty === 'easy' ? 2 : difficulty === 'medium' ? 4 : 6
+  const reserved = new Set<Motion>([
+    ...(config.useWipeOff ? [config.wipeOff] : []),
+    ...(config.useIndicator && config.indicator ? [config.indicator] : []),
+  ])
+  const pool = ALL_MOTIONS.filter((m) => !reserved.has(m))
+  return shuffle(pool).slice(0, Math.min(numDecoys, pool.length)).map((m) => ({ motion: m, role: 'decoy' as const }))
+}
+
+/** ~20% chance of a swing-away round (more likely on harder difficulties) */
+export function shouldPlaySwingAway(difficulty: Difficulty): boolean {
+  const prob = difficulty === 'easy' ? 0.15 : difficulty === 'medium' ? 0.2 : 0.25
+  return Math.random() < prob
 }
 
 /** Returns the correct PlaySign from a sequence (the LAST sign-role motion) */

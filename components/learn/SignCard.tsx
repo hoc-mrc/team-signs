@@ -81,19 +81,21 @@ export default function SignCard({ sign, config }: SignCardProps) {
               {signAnim.label}
             </Badge>
           </div>
-          <div className="flex items-center gap-2">
-            <span
-              className="inline-block w-2 h-2 rounded-full flex-shrink-0"
-              style={{ backgroundColor: ROLE_STYLES['wipe-off'].fill }}
-            />
-            <span className="text-xs text-slate-400">Wipe off:</span>
-            <Badge
-              variant="outline"
-              className="text-red-300 border-red-800 bg-red-950/40 text-xs"
-            >
-              {MOTION_LABELS[config.wipeOff]}
-            </Badge>
-          </div>
+          {config.useWipeOff && (
+            <div className="flex items-center gap-2">
+              <span
+                className="inline-block w-2 h-2 rounded-full flex-shrink-0"
+                style={{ backgroundColor: ROLE_STYLES['wipe-off'].fill }}
+              />
+              <span className="text-xs text-slate-400">Wipe off:</span>
+              <Badge
+                variant="outline"
+                className="text-red-300 border-red-800 bg-red-950/40 text-xs"
+              >
+                {MOTION_LABELS[config.wipeOff]}
+              </Badge>
+            </div>
+          )}
         </div>
 
         {/* Avatar or Demo button */}

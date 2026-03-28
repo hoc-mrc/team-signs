@@ -8,7 +8,7 @@ export const DEFAULT_CONFIG: SignConfig = {
   activeSignsMap: {
     bunt: true,
     steal: true,
-    take: true,
+    take: false,
     'delayed-steal': false,
     'green-light': false,
     'sacrifice-bunt': false,

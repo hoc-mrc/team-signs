@@ -8,11 +8,13 @@ import { Badge } from '@/components/ui/badge'
 import CoachAvatar from '@/components/coach/CoachAvatar'
 import QuizPanel from '@/components/quiz/QuizPanel'
 import ScoreTracker from '@/components/quiz/ScoreTracker'
-import type { PlaySign, SignConfig, MotionStep, Difficulty } from '@/lib/types'
-import { ALL_PLAY_SIGNS, SIGN_LABELS, SIGN_EMOJIS } from '@/lib/types'
+import type { PlaySign, SignConfig, MotionStep, Difficulty, QuizAnswer } from '@/lib/types'
+import { ALL_PLAY_SIGNS, QUIZ_ANSWER_LABELS, QUIZ_ANSWER_EMOJIS } from '@/lib/types'
 import { loadConfig } from '@/lib/signConfig'
 import {
   buildQuizRound,
+  buildSwingAwayRound,
+  shouldPlaySwingAway,
   generateAnswerChoices,
   getCorrectSign,
   pickRandomSign,
@@ -56,9 +58,9 @@ export default function QuizPage() {
   const [score, setScore] = useState(0)
   const [streak, setStreak] = useState(0)
   const [sequence, setSequence] = useState<MotionStep[]>([])
-  const [correctSign, setCorrectSign] = useState<PlaySign>('bunt')
-  const [choices, setChoices] = useState<PlaySign[]>([])
-  const [playerAnswer, setPlayerAnswer] = useState<PlaySign | null>(null)
+  const [correctAnswer, setCorrectAnswer] = useState<QuizAnswer>('bunt')
+  const [choices, setChoices] = useState<QuizAnswer[]>([])
+  const [playerAnswer, setPlayerAnswer] = useState<QuizAnswer | null>(null)
   const [playCount, setPlayCount] = useState(0)
 
   useEffect(() => {
@@ -68,13 +70,23 @@ export default function QuizPage() {
   const startRound = useCallback(
     (cfg: SignConfig, diff: Difficulty) => {
       const activeSigns = ALL_PLAY_SIGNS.filter((s) => cfg.activeSignsMap[s])
-      const sign = pickRandomSign(activeSigns)
-      const seq = buildQuizRound(sign, cfg, diff, activeSigns)
-      const resolved = getCorrectSign(seq, cfg) ?? sign
-      const opts = generateAnswerChoices(resolved, activeSigns)
+
+      let seq: MotionStep[]
+      let answer: QuizAnswer
+
+      if (shouldPlaySwingAway(diff)) {
+        seq = buildSwingAwayRound(cfg, diff)
+        answer = 'swing-away'
+      } else {
+        const sign = pickRandomSign(activeSigns)
+        seq = buildQuizRound(sign, cfg, diff, activeSigns)
+        answer = getCorrectSign(seq, cfg) ?? sign
+      }
+
+      const opts = generateAnswerChoices(answer, activeSigns)
 
       setSequence(seq)
-      setCorrectSign(resolved)
+      setCorrectAnswer(answer)
       setChoices(opts)
       setPlayerAnswer(null)
       setGameState('animating')
@@ -97,12 +109,12 @@ export default function QuizPage() {
     setGameState('answering')
   }
 
-  function handleAnswer(sign: PlaySign) {
+  function handleAnswer(answer: QuizAnswer) {
     if (gameState !== 'answering') return
-    setPlayerAnswer(sign)
+    setPlayerAnswer(answer)
     setGameState('feedback')
 
-    const isCorrect = sign === correctSign
+    const isCorrect = answer === correctAnswer
     if (isCorrect) {
       setScore((s) => s + 1)
       setStreak((s) => s + 1)
@@ -244,7 +256,7 @@ export default function QuizPage() {
   const isAnswering = gameState === 'answering'
   const isFeedback = gameState === 'feedback'
   const isAnimating = gameState === 'animating'
-  const isCorrect = playerAnswer === correctSign
+  const isCorrect = playerAnswer === correctAnswer
 
   return (
     <main className="min-h-screen flex flex-col items-center p-6 gap-5 max-w-sm mx-auto">
@@ -314,7 +326,7 @@ export default function QuizPage() {
                 <p className="text-xs text-slate-400">
                   That was{' '}
                   <span className="text-white font-semibold">
-                    {SIGN_EMOJIS[correctSign]} {SIGN_LABELS[correctSign]}
+                    {QUIZ_ANSWER_EMOJIS[correctAnswer]} {QUIZ_ANSWER_LABELS[correctAnswer]}
                   </span>
                 </p>
               )}
@@ -327,7 +339,7 @@ export default function QuizPage() {
       {(isAnswering || isFeedback) && (
         <QuizPanel
           choices={choices}
-          correctSign={correctSign}
+          correctSign={correctAnswer}
           playerAnswer={playerAnswer}
           onAnswer={handleAnswer}
           state={isFeedback ? 'feedback' : 'answering'}

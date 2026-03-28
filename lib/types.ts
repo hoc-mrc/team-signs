@@ -122,3 +122,26 @@ export type MotionStep = {
 }
 
 export type Difficulty = 'easy' | 'medium' | 'hard'
+
+// Quiz can include 'swing-away' as a valid answer (no sign given, just decoys)
+export type QuizAnswer = PlaySign | 'swing-away'
+
+export const QUIZ_ANSWER_LABELS: Record<QuizAnswer, string> = {
+  ...SIGN_LABELS,
+  'swing-away': 'Swing Away',
+}
+
+export const QUIZ_ANSWER_EMOJIS: Record<QuizAnswer, string> = {
+  ...SIGN_EMOJIS,
+  'swing-away': '⚾',
+}
+
+export const QUIZ_ANSWER_DESCRIPTIONS: Record<QuizAnswer, string> = {
+  ...SIGN_DESCRIPTIONS,
+  'swing-away': 'No sign — just decoys. Ignore them and swing away.',
+}
+
+export const QUIZ_ANSWER_COLORS: Record<QuizAnswer, { bg: string; border: string; text: string }> = {
+  ...SIGN_COLORS,
+  'swing-away': { bg: 'bg-slate-500/20', border: 'border-slate-500', text: 'text-slate-300' },
+}
