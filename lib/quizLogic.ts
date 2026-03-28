@@ -17,15 +17,18 @@ function shuffle<T>(arr: T[]): T[] {
 export function generateSequence(
   sign: PlaySign,
   config: SignConfig,
-  difficulty: Difficulty
+  difficulty: Difficulty,
+  activeSigns: PlaySign[] = []
 ): MotionStep[] {
   const numDecoys = difficulty === 'easy' ? 1 : difficulty === 'medium' ? 3 : 5
 
-  // Motions reserved for functional roles
+  // Motions reserved for functional roles — exclude ALL active sign motions as decoys
+  // so players never see another real sign and confuse it for the answer
   const reserved = new Set<Motion>([
     ...(config.useWipeOff ? [config.wipeOff] : []),
     config.signMap[sign],
     ...(config.useIndicator && config.indicator ? [config.indicator] : []),
+    ...activeSigns.map((s) => config.signMap[s]),
   ])
 
   const decoyPool = ALL_MOTIONS.filter((m) => !reserved.has(m))
@@ -54,13 +57,13 @@ export function generateHardSequence(
   const useWipeOff = config.useWipeOff && Math.random() < 0.4
 
   if (!useWipeOff) {
-    return generateSequence(realSign, config, 'hard')
+    return generateSequence(realSign, config, 'hard', activeSigns)
   }
 
   // Pick a different sign to fake first
   const otherSigns = activeSigns.filter((s) => s !== realSign)
   if (otherSigns.length === 0) {
-    return generateSequence(realSign, config, 'hard')
+    return generateSequence(realSign, config, 'hard', activeSigns)
   }
   const fakeSign = pickRandom(otherSigns)
 
@@ -68,6 +71,7 @@ export function generateHardSequence(
     ...(config.useWipeOff ? [config.wipeOff] : []),
     config.signMap[fakeSign],
     ...(config.useIndicator && config.indicator ? [config.indicator] : []),
+    ...activeSigns.map((s) => config.signMap[s]),
   ])
   const fakeDecoyPool = ALL_MOTIONS.filter((m) => !fakeReserved.has(m))
   const fakeDecoy = shuffle(fakeDecoyPool)[0]
@@ -85,7 +89,7 @@ export function generateHardSequence(
   steps.push({ motion: config.wipeOff, role: 'wipe-off' })
 
   // --- Real sequence ---
-  const realSteps = generateSequence(realSign, config, 'hard')
+  const realSteps = generateSequence(realSign, config, 'hard', activeSigns)
   steps.push(...realSteps)
 
   return steps
