@@ -123,11 +123,13 @@ export function generateAnswerChoices(correct: QuizAnswer, activeSigns: PlaySign
 }
 
 /** Generate a decoy-only sequence — no sign, batter should swing away */
-export function buildSwingAwayRound(config: SignConfig, difficulty: Difficulty): MotionStep[] {
+export function buildSwingAwayRound(config: SignConfig, difficulty: Difficulty, activeSigns: PlaySign[]): MotionStep[] {
   const numDecoys = difficulty === 'easy' ? 2 : difficulty === 'medium' ? 4 : 6
   const reserved = new Set<Motion>([
     ...(config.useWipeOff ? [config.wipeOff] : []),
     ...(config.useIndicator && config.indicator ? [config.indicator] : []),
+    // Exclude active sign motions — showing them would look like a real sign was given
+    ...activeSigns.map((s) => config.signMap[s]),
   ])
   const pool = ALL_MOTIONS.filter((m) => !reserved.has(m))
   return shuffle(pool).slice(0, Math.min(numDecoys, pool.length)).map((m) => ({ motion: m, role: 'decoy' as const }))

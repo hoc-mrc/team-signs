@@ -75,7 +75,7 @@ export default function QuizPage() {
       let answer: QuizAnswer
 
       if (shouldPlaySwingAway(diff)) {
-        seq = buildSwingAwayRound(cfg, diff)
+        seq = buildSwingAwayRound(cfg, diff, activeSigns)
         answer = 'swing-away'
       } else {
         const sign = pickRandomSign(activeSigns)
