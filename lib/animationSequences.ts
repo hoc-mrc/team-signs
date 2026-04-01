@@ -24,7 +24,7 @@ export const MOTION_ANIM: Record<Motion, MotionAnimData> = {
     label: 'Touch Chin',
   },
   'touch-hat-brim': {
-    handDest: { x: 100, y: 55 },
+    handDest: { x: 100, y: 62 },
     highlightId: 'hat-brim',
     label: 'Touch Hat Brim',
   },
@@ -34,7 +34,7 @@ export const MOTION_ANIM: Record<Motion, MotionAnimData> = {
     label: 'Touch Top of Hat',
   },
   'wipe-hat-brim': {
-    wipe: { from: { x: 65, y: 55 }, to: { x: 135, y: 55 } },
+    wipe: { from: { x: 72, y: 62 }, to: { x: 128, y: 62 } },
     highlightId: 'hat-brim',
     label: 'Wipe Hat Brim',
   },
