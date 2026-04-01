@@ -216,6 +216,10 @@ export default function QuizPage() {
         >
           Start Game
         </Button>
+
+        <Link href="/setup" className="text-slate-500 hover:text-slate-300 text-sm underline underline-offset-2 transition-colors">
+          Edit sign setup
+        </Link>
       </main>
     )
   }
@@ -275,8 +279,13 @@ export default function QuizPage() {
               {passed ? 'Play Again' : 'Try Again'}
             </Button>
           )}
-          <Link href="/">
+          <Link href="/setup">
             <Button variant="outline" className="w-full border-slate-700 text-slate-300">
+              Edit Sign Setup
+            </Button>
+          </Link>
+          <Link href="/">
+            <Button variant="ghost" className="w-full text-slate-500 hover:text-slate-300">
               Back to Home
             </Button>
           </Link>
@@ -303,6 +312,9 @@ export default function QuizPage() {
         <Badge variant="outline" className={diff.badge}>
           {diff.label}
         </Badge>
+        <Link href="/setup" className="text-slate-500 hover:text-slate-300 text-xs transition-colors">
+          Setup
+        </Link>
       </div>
 
       <ScoreTracker
