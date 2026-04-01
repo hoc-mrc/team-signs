@@ -28,6 +28,11 @@ export const MOTION_ANIM: Record<Motion, MotionAnimData> = {
     highlightId: 'hat-brim',
     label: 'Touch Hat Brim',
   },
+  'touch-top-of-hat': {
+    handDest: { x: 100, y: 30 },
+    highlightId: 'hat-top',
+    label: 'Touch Top of Hat',
+  },
   'wipe-hat-brim': {
     wipe: { from: { x: 65, y: 55 }, to: { x: 135, y: 55 } },
     highlightId: 'hat-brim',
@@ -63,6 +68,11 @@ export const MOTION_ANIM: Record<Motion, MotionAnimData> = {
     highlightId: 'right-wrist',
     label: 'Touch Wrist',
   },
+  'touch-left-wrist': {
+    handDest: { x: 22, y: 188 },
+    highlightId: 'left-wrist',
+    label: 'Touch Left Wrist',
+  },
   'wipe-down-arm': {
     wipe: { from: { x: 137, y: 128 }, to: { x: 178, y: 186 } },
     highlightId: 'right-arm',
@@ -72,6 +82,11 @@ export const MOTION_ANIM: Record<Motion, MotionAnimData> = {
     wipe: { from: { x: 178, y: 186 }, to: { x: 137, y: 128 } },
     highlightId: 'right-arm',
     label: 'Wipe Up Arm',
+  },
+  'touch-cheek': {
+    handDest: { x: 83, y: 93 },
+    highlightId: 'cheek',
+    label: 'Touch Cheek',
   },
   'touch-left-ear': {
     handDest: { x: 72, y: 84 },

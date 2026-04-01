@@ -209,10 +209,22 @@ export default function CoachAvatar({
           initial={{ opacity: 0 }} animate={hl('hat-brim')} transition={hlTrans}
           style={{ pointerEvents: 'none' }}
         />
+        {/* hat-top */}
+        <motion.circle
+          cx={100} cy={30} r={18}
+          initial={{ opacity: 0 }} animate={hl('hat-top')} transition={hlTrans}
+          style={{ pointerEvents: 'none' }}
+        />
         {/* nose */}
         <motion.circle
           cx={100} cy={86} r={13}
           initial={{ opacity: 0 }} animate={hl('nose')} transition={hlTrans}
+          style={{ pointerEvents: 'none' }}
+        />
+        {/* cheek */}
+        <motion.ellipse
+          cx={83} cy={93} rx={14} ry={10}
+          initial={{ opacity: 0 }} animate={hl('cheek')} transition={hlTrans}
           style={{ pointerEvents: 'none' }}
         />
         {/* chin */}
@@ -244,6 +256,12 @@ export default function CoachAvatar({
         <motion.circle
           cx={178} cy={188} r={14}
           initial={{ opacity: 0 }} animate={hl('right-wrist')} transition={hlTrans}
+          style={{ pointerEvents: 'none' }}
+        />
+        {/* left-wrist */}
+        <motion.circle
+          cx={22} cy={188} r={14}
+          initial={{ opacity: 0 }} animate={hl('left-wrist')} transition={hlTrans}
           style={{ pointerEvents: 'none' }}
         />
         {/* left-thigh */}

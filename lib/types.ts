@@ -4,6 +4,7 @@ export type Motion =
   | 'touch-nose'
   | 'touch-chin'
   | 'touch-hat-brim'
+  | 'touch-top-of-hat'
   | 'wipe-hat-brim'
   | 'touch-belt'
   | 'touch-chest'
@@ -11,15 +12,19 @@ export type Motion =
   | 'touch-thigh'
   | 'wipe-down-thigh'
   | 'touch-wrist'
+  | 'touch-left-wrist'
   | 'touch-left-ear'
   | 'touch-right-ear'
+  | 'touch-cheek'
 
 export const ALL_MOTIONS: Motion[] = [
   'touch-nose',
   'touch-chin',
+  'touch-cheek',
   'touch-left-ear',
   'touch-right-ear',
   'touch-hat-brim',
+  'touch-top-of-hat',
   'wipe-hat-brim',
   'touch-belt',
   'touch-chest',
@@ -27,6 +32,7 @@ export const ALL_MOTIONS: Motion[] = [
   'touch-thigh',
   'wipe-down-thigh',
   'touch-wrist',
+  'touch-left-wrist',
   'wipe-down-arm',
   'wipe-up-arm',
 ]
@@ -34,9 +40,11 @@ export const ALL_MOTIONS: Motion[] = [
 export const MOTION_LABELS: Record<Motion, string> = {
   'touch-nose': 'Touch Nose',
   'touch-chin': 'Touch Chin',
+  'touch-cheek': 'Touch Cheek',
   'touch-left-ear': 'Touch Left Ear',
   'touch-right-ear': 'Touch Right Ear',
   'touch-hat-brim': 'Touch Hat Brim',
+  'touch-top-of-hat': 'Touch Top of Hat',
   'wipe-hat-brim': 'Wipe Hat Brim',
   'touch-belt': 'Touch Belt',
   'touch-chest': 'Touch Chest',
@@ -44,6 +52,7 @@ export const MOTION_LABELS: Record<Motion, string> = {
   'touch-thigh': 'Touch Thigh',
   'wipe-down-thigh': 'Wipe Down Thigh',
   'touch-wrist': 'Touch Wrist',
+  'touch-left-wrist': 'Touch Left Wrist',
   'wipe-down-arm': 'Wipe Down Arm',
   'wipe-up-arm': 'Wipe Up Arm',
 }
