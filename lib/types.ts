@@ -61,6 +61,7 @@ export type PlaySign =
   | 'bunt'
   | 'steal'
   | 'take'
+  | 'fake-bunt'
   | 'delayed-steal'
   | 'green-light'
   | 'sacrifice-bunt'
@@ -70,6 +71,7 @@ export const ALL_PLAY_SIGNS: PlaySign[] = [
   'bunt',
   'steal',
   'take',
+  'fake-bunt',
   'delayed-steal',
   'green-light',
   'sacrifice-bunt',
@@ -80,6 +82,7 @@ export const SIGN_LABELS: Record<PlaySign, string> = {
   bunt: 'Bunt',
   steal: 'Steal',
   take: 'Take',
+  'fake-bunt': 'Fake Bunt',
   'delayed-steal': 'Delayed Steal',
   'green-light': 'Green Light',
   'sacrifice-bunt': 'Sacrifice Bunt',
@@ -90,6 +93,7 @@ export const SIGN_DESCRIPTIONS: Record<PlaySign, string> = {
   bunt: 'Bunt on the next pitch',
   steal: 'Steal on the next pitch',
   take: 'Do not swing at the next pitch',
+  'fake-bunt': 'Show bunt, then pull back and swing away',
   'delayed-steal': "Break for the next base on the catcher's throw back to the pitcher",
   'green-light': 'Steal on your own, or swing away on a 3-0 count',
   'sacrifice-bunt': 'Bunt to advance the runner, even if you make an out',
@@ -100,6 +104,7 @@ export const SIGN_EMOJIS: Record<PlaySign, string> = {
   bunt: '🏏',
   steal: '💨',
   take: '✋',
+  'fake-bunt': '🎭',
   'delayed-steal': '⏳',
   'green-light': '🟢',
   'sacrifice-bunt': '🤲',
@@ -110,6 +115,7 @@ export const SIGN_COLORS: Record<PlaySign, { bg: string; border: string; text: s
   bunt: { bg: 'bg-amber-500/20', border: 'border-amber-500', text: 'text-amber-300' },
   steal: { bg: 'bg-blue-500/20', border: 'border-blue-500', text: 'text-blue-300' },
   take: { bg: 'bg-red-500/20', border: 'border-red-500', text: 'text-red-300' },
+  'fake-bunt': { bg: 'bg-pink-500/20', border: 'border-pink-500', text: 'text-pink-300' },
   'delayed-steal': { bg: 'bg-cyan-500/20', border: 'border-cyan-500', text: 'text-cyan-300' },
   'green-light': { bg: 'bg-green-500/20', border: 'border-green-500', text: 'text-green-300' },
   'sacrifice-bunt': { bg: 'bg-orange-500/20', border: 'border-orange-500', text: 'text-orange-300' },

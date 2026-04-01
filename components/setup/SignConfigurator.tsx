@@ -16,13 +16,52 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import type { SignConfig, Motion, PlaySign } from '@/lib/types'
 import {
-  ALL_MOTIONS,
   ALL_PLAY_SIGNS,
-  MOTION_LABELS,
   SIGN_LABELS,
   SIGN_DESCRIPTIONS,
   SIGN_EMOJIS,
 } from '@/lib/types'
+
+// Motion dropdown: top-of-head → feet order, "body part - motion" format
+const MOTION_DROPDOWN_ORDER: Motion[] = [
+  'touch-top-of-hat',
+  'touch-hat-brim',
+  'wipe-hat-brim',
+  'touch-left-ear',
+  'touch-right-ear',
+  'touch-cheek',
+  'touch-nose',
+  'touch-chin',
+  'touch-chest',
+  'wipe-chest',
+  'touch-belt',
+  'wipe-up-arm',
+  'wipe-down-arm',
+  'touch-wrist',
+  'touch-left-wrist',
+  'touch-thigh',
+  'wipe-down-thigh',
+]
+
+const MOTION_DROPDOWN_LABELS: Record<Motion, string> = {
+  'touch-top-of-hat':  'hat - touch top',
+  'touch-hat-brim':    'hat - touch brim',
+  'wipe-hat-brim':     'hat - wipe brim',
+  'touch-left-ear':    'face - left ear',
+  'touch-right-ear':   'face - right ear',
+  'touch-cheek':       'face - cheek',
+  'touch-nose':        'face - nose',
+  'touch-chin':        'face - chin',
+  'touch-chest':       'chest - touch',
+  'wipe-chest':        'chest - wipe',
+  'touch-belt':        'belt - touch',
+  'wipe-up-arm':       'arm - wipe up',
+  'wipe-down-arm':     'arm - wipe down',
+  'touch-wrist':       'wrist - touch right',
+  'touch-left-wrist':  'wrist - touch left',
+  'touch-thigh':       'thigh - touch',
+  'wipe-down-thigh':   'thigh - wipe down',
+}
 import { saveConfig, validateConfig } from '@/lib/signConfig'
 import { DEFAULT_CONFIG } from '@/lib/defaultConfig'
 
@@ -47,14 +86,14 @@ function MotionSelect({
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent className="bg-slate-800 border-slate-600">
-        {ALL_MOTIONS.map((m) => (
+        {MOTION_DROPDOWN_ORDER.map((m) => (
           <SelectItem
             key={m}
             value={m}
             disabled={exclude?.has(m) && m !== value}
             className="text-slate-100 focus:bg-slate-700"
           >
-            {MOTION_LABELS[m]}
+            {MOTION_DROPDOWN_LABELS[m]}
           </SelectItem>
         ))}
       </SelectContent>
@@ -256,7 +295,7 @@ export default function SignConfigurator({ initial }: SignConfiguratorProps) {
 
       <div className="text-center">
         <Badge variant="outline" className="border-slate-700 text-slate-500 text-xs">
-          {ALL_PLAY_SIGNS.filter((s) => config.activeSignsMap[s]).length} of {ALL_PLAY_SIGNS.length} signs active · {ALL_MOTIONS.length} motions available
+          {ALL_PLAY_SIGNS.filter((s) => config.activeSignsMap[s]).length} of {ALL_PLAY_SIGNS.length} signs active · {MOTION_DROPDOWN_ORDER.length} motions available
         </Badge>
       </div>
     </div>
